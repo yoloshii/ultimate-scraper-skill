@@ -1,0 +1,158 @@
+# Ultimate Web Scraper - Default Configuration
+
+# Core scraper settings
+scraper:
+  default_mode: auto
+  default_output: markdown
+  default_timeout: 30
+  max_tier: 4
+
+  # Token optimization for LLM consumption
+  optimize_tokens: true
+  max_content_length: 100000
+
+# Proxy configuration (bring your own — any HTTP/SOCKS5 provider)
+proxy:
+  default_geo: null  # No geo-targeting by default
+  default_type: residential
+  sticky_duration_minutes: 10
+  rotate_on_error: true
+  # Configure via env vars: PROXY_HOST, PROXY_PORT, PROXY_USERNAME, PROXY_PASSWORD
+
+# Session management
+session:
+  storage_path: ~/.cache/ultimate-scraper/sessions
+  max_age_hours: 24
+  auto_cleanup: true
+  checkpoint_enabled: true
+
+# Cache configuration
+cache:
+  enabled: true
+  storage_path: ~/.cache/ultimate-scraper/cache.db
+  ttl_hours: 24
+  max_size_mb: 500
+
+# AI extraction configuration (3-tier LLM routing)
+ai:
+  # Tier 1: Local LLM (any OpenAI-compatible API)
+  local:
+    url: ""  # Set via LOCAL_LLM_URL env var (e.g., http://localhost:8080/v1/chat/completions)
+    enabled: false  # Set LOCAL_LLM_ENABLED=true when local LLM is running
+    timeout_seconds: 120
+
+  # Tier 2: z.ai GLM-4.5-Air (rate-limited fallback)
+  zai:
+    base_url: https://api.z.ai/api/coding/paas/v4
+    model: glm-4.5-air
+    timeout_ms: 600000
+
+  # Tier 3: Anthropic Claude Haiku (paid fallback)
+  haiku:
+    url: https://api.anthropic.com/v1/messages  # Or set ANTHROPIC_BASE_URL env var
+    model: claude-haiku-4-5
+    max_tokens: 4096
+
+  # General AI settings
+  temperature: 0.1
+  max_extraction_chars: 50000
+
+# Tier configuration
+tiers:
+  tier0:
+    enabled: true
+    extractors:
+      - nextdata       # __NEXT_DATA__ (Next.js)
+      - nuxt           # __NUXT__ (Nuxt.js)
+      - jsonld         # JSON-LD structured data
+      - apollo         # __APOLLO_STATE__
+      - initial_state  # __INITIAL_STATE__
+      - preloaded      # __PRELOADED_STATE__
+
+  tier1:
+    enabled: true
+    default_impersonate: chrome131
+    retry_count: 2
+    retry_delay_seconds: 1
+    # Browser impersonation options: chrome131-143, firefox134-135, safari17-18
+
+  tier2:
+    enabled: true
+    headless: true
+    solve_cloudflare: true
+    hide_canvas: true
+    block_webrtc: true
+    network_idle: true
+
+  tier3:
+    enabled: true
+    headless: true
+    geoip_matching: true
+    humanize: 1.5  # Human-like cursor movement (seconds max delay)
+    block_webrtc: true
+
+  tier4:
+    enabled: true
+    use_crawl4ai: true
+    fallback_to_tier3_plus_ai: true
+
+# CAPTCHA solving (E1)
+captcha:
+  # CapSolver (AI-based, faster) — set env CAPSOLVER_API_KEY
+  capsolver_api_key: ""
+  # 2Captcha (human workers, slower fallback) — set env TWOCAPTCHA_API_KEY
+  twocaptcha_api_key: ""
+
+# CloakBrowser as Tier 2 engine (E2)
+# "auto" = use if installed, "1" = force, "0" = disable
+cloakbrowser:
+  enabled: auto  # env: CLOAKBROWSER_ENABLED
+
+# Per-domain rate limiting (E3)
+rate_limiting:
+  enabled: true
+  limits:
+    default: 8          # requests per minute
+    linkedin.com: 4
+    facebook.com: 5
+    twitter.com: 6
+    x.com: 6
+    instagram.com: 4
+    tiktok.com: 4
+
+# WebMCP extraction (E5)
+# "auto" = use if Chrome 146+ detected, "1" = force, "0" = disable
+webmcp:
+  enabled: auto  # env: WEBMCP_ENABLED
+  chrome_channel: ""  # chrome-dev, chrome-beta, chrome-canary, or empty
+
+# Tracker blocking via CDP (E8)
+tracker_blocking:
+  enabled: true  # Block analytics/fingerprinting scripts in browser tiers
+
+# Brightdata fallback
+brightdata:
+  enabled: true
+  # Brightdata is invoked via MCP when needed
+  trigger_on:
+    - paywall
+    - geo_restricted
+    - content_blocked
+    - all_tiers_failed
+
+# Detection settings
+detection:
+  probe_timeout_seconds: 10
+  cache_probes: true
+  probe_cache_ttl_hours: 6
+
+# Output formatting
+output:
+  markdown:
+    optimize_tokens: true
+    remove_boilerplate: true
+    body_width: 0  # No line wrapping
+
+  json:
+    include_metadata: true
+    pretty_print: true

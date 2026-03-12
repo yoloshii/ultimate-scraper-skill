@@ -1,0 +1,18 @@
+# Test dependencies for ultimate-scraper
+
+# Core testing
+pytest>=7.0
+pytest-asyncio>=0.21
+pytest-cov>=4.0
+pytest-timeout>=2.0
+
+# For statistical tests
+scipy>=1.10
+
+# HTTP client for E2E tests
+httpx>=0.24
+
+# Already in main requirements but ensure available
+beautifulsoup4>=4.12
+lxml>=4.9
+pyyaml>=6.0

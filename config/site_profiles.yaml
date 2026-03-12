@@ -1,0 +1,396 @@
+# Ultimate Web Scraper - Known Site Profiles
+#
+# Profiles define recommended scraping approaches for known sites.
+# Pattern matching uses substring matching against the domain.
+
+# E-commerce (typically heavy anti-bot with JA4T)
+# ja4t: true indicates transport-layer fingerprinting that defeats TLS spoofing
+sites:
+  amazon.:
+    antibot: akamai
+    tier: 3
+    proxy: true
+    sticky: true
+    ja4t: true
+    notes: "Heavy bot protection with JA4T, requires Camoufox with sticky proxy"
+
+  ebay.:
+    antibot: akamai
+    tier: 3
+    proxy: true
+    ja4t: true
+    notes: "Akamai protection with JA4T, escalates quickly"
+
+  walmart.:
+    antibot: perimeterx
+    tier: 3
+    proxy: true
+    ja4t: true
+    notes: "PerimeterX protection with JA4T"
+
+  target.:
+    antibot: akamai
+    tier: 3
+    proxy: true
+    ja4t: true
+
+  bestbuy.:
+    antibot: akamai
+    tier: 3
+    proxy: true
+    ja4t: true
+
+  # Social media (JA4T common)
+  linkedin.:
+    antibot: datadome
+    tier: 3
+    proxy: true
+    sticky: true
+    ja4t: true
+    notes: "DataDome protection with JA4T, aggressive rate limiting"
+
+  twitter.:
+    antibot: cloudflare
+    tier: 2
+    proxy: true
+
+  x.com:
+    antibot: cloudflare
+    tier: 2
+    proxy: true
+
+  facebook.:
+    antibot: custom
+    tier: 3
+    proxy: true
+    ja4t: true
+    notes: "Custom anti-bot with JA4T, very aggressive"
+
+  instagram.:
+    antibot: custom
+    tier: 3
+    proxy: true
+    proxy_type: mobile
+    ja4t: true
+    notes: "Prefers mobile proxies, has JA4T"
+
+  tiktok.:
+    antibot: custom
+    tier: 3
+    proxy: true
+    ja4t: true
+    notes: "Very aggressive anti-bot with JA4T"
+
+  # Tech/Reviews
+  g2.com:
+    antibot: datadome
+    tier: 3
+    proxy: true
+    ja4t: true
+    notes: "DataDome protection with JA4T"
+
+  trustpilot.:
+    antibot: cloudflare
+    tier: 2
+    proxy: true
+
+  glassdoor.:
+    antibot: cloudflare
+    tier: 2
+    proxy: true
+    sticky: true
+
+  yelp.:
+    antibot: cloudflare
+    tier: 2
+    proxy: true
+
+  # Travel (JA4T common)
+  booking.com:
+    antibot: perimeterx
+    tier: 3
+    proxy: true
+    ja4t: true
+    notes: "PerimeterX with JA4T"
+
+  airbnb.:
+    antibot: akamai
+    tier: 3
+    proxy: true
+    ja4t: true
+
+  expedia.:
+    antibot: akamai
+    tier: 3
+    proxy: true
+    ja4t: true
+
+  tripadvisor.:
+    antibot: cloudflare
+    tier: 2
+    proxy: true
+
+  # Real estate (JA4T on major sites)
+  zillow.:
+    antibot: perimeterx
+    tier: 3
+    proxy: true
+    ja4t: true
+    notes: "Very aggressive PerimeterX with JA4T"
+
+  redfin.:
+    antibot: cloudflare
+    tier: 2
+    proxy: true
+
+  realtor.:
+    antibot: akamai
+    tier: 3
+    proxy: true
+    ja4t: true
+
+  # Job boards
+  indeed.:
+    antibot: cloudflare
+    tier: 2
+    proxy: true
+
+  monster.:
+    antibot: cloudflare
+    tier: 2
+    proxy: true
+
+  # News (often paywalled)
+  nytimes.:
+    antibot: cloudflare
+    tier: 2
+    paywall: true
+    notes: "Soft paywall, may need Brightdata"
+
+  wsj.:
+    antibot: akamai
+    tier: 2
+    paywall: true
+    notes: "Hard paywall, Brightdata recommended"
+
+  bloomberg.:
+    antibot: cloudflare
+    tier: 2
+    paywall: true
+
+  ft.com:
+    antibot: cloudflare
+    tier: 2
+    paywall: true
+    notes: "Financial Times, hard paywall"
+
+  washingtonpost.:
+    antibot: cloudflare
+    tier: 2
+    paywall: true
+
+  medium.com:
+    antibot: cloudflare
+    tier: 2
+    paywall: true
+    notes: "Metered paywall"
+
+  # Tech companies (usually easy)
+  github.com:
+    antibot: null
+    tier: 1
+    proxy: false
+    notes: "No anti-bot, simple HTTP works"
+
+  stackoverflow.com:
+    antibot: null
+    tier: 1
+    proxy: false
+
+  docs.:
+    antibot: null
+    tier: 0
+    proxy: false
+    notes: "Documentation sites usually have static data"
+
+  # Static data sources (Next.js, Nuxt, etc.)
+  vercel.app:
+    has_nextdata: true
+    tier: 0
+    notes: "Usually has __NEXT_DATA__"
+
+  netlify.app:
+    has_nextdata: true
+    tier: 0
+
+  # Cloudflare-protected
+  cloudflare.com:
+    antibot: cloudflare
+    tier: 2
+    sticky: true
+    notes: "Cloudflare's own protection"
+
+  # Financial
+  robinhood.:
+    antibot: custom
+    tier: 3
+    proxy: true
+
+  coinbase.:
+    antibot: cloudflare
+    tier: 2
+    proxy: true
+
+  binance.:
+    antibot: custom
+    tier: 3
+    proxy: true
+
+# Anti-bot system characteristics
+antibot_systems:
+  cloudflare:
+    description: "Cloudflare Bot Management / Turnstile"
+    indicators:
+      headers:
+        - cf-ray
+        - cf-cache-status
+      html:
+        - cf-browser-verification
+        - cdn-cgi/challenge-platform
+        - __cf_chl_
+        - "Cloudflare Ray ID"
+        - "Just a moment..."
+    recommended_tier: 2
+    needs_proxy: true
+
+  cloudflare_uam:
+    description: "Cloudflare Under Attack Mode (5-second challenge)"
+    indicators:
+      html:
+        - "Checking your browser before accessing"
+        - "This process is automatic"
+        - "Please Wait... | Cloudflare"
+    recommended_tier: 3
+    needs_proxy: true
+
+  datadome:
+    description: "DataDome Bot Protection"
+    indicators:
+      headers:
+        - x-datadome
+        - x-datadome-cid
+      html:
+        - datadome.co
+        - dd.js
+        - window.ddjskey
+    recommended_tier: 3
+    needs_proxy: true
+
+  akamai:
+    description: "Akamai Bot Manager"
+    indicators:
+      headers:
+        - x-akamai-transformed
+        - akamai-grn
+      html:
+        - _abck
+        - bm_sz
+        - ak_bmsc
+    recommended_tier: 3
+    needs_proxy: true
+
+  perimeterx:
+    description: "PerimeterX / HUMAN Security"
+    indicators:
+      headers:
+        - x-px-
+      html:
+        - _px3
+        - _pxff_
+        - px-captcha
+    recommended_tier: 3
+    needs_proxy: true
+
+  incapsula:
+    description: "Imperva Incapsula"
+    indicators:
+      headers:
+        - x-iinfo
+        - x-cdn
+      html:
+        - incapsula
+        - reese84
+    recommended_tier: 3
+    needs_proxy: true
+
+# Geo-fingerprint correlation
+# Maps proxy geo to timezone/locale for fingerprint consistency
+geo_profiles:
+  us:
+    timezone: America/New_York
+    locale: en-US
+    browsers:
+      - chrome
+      - edge
+
+  us-ny:
+    timezone: America/New_York
+    locale: en-US
+
+  us-la:
+    timezone: America/Los_Angeles
+    locale: en-US
+
+  us-chicago:
+    timezone: America/Chicago
+    locale: en-US
+
+  uk:
+    timezone: Europe/London
+    locale: en-GB
+    browsers:
+      - chrome
+      - firefox
+
+  gb:
+    timezone: Europe/London
+    locale: en-GB
+
+  de:
+    timezone: Europe/Berlin
+    locale: de-DE
+    browsers:
+      - chrome
+      - firefox
+
+  de-berlin:
+    timezone: Europe/Berlin
+    locale: de-DE
+
+  fr:
+    timezone: Europe/Paris
+    locale: fr-FR
+
+  jp:
+    timezone: Asia/Tokyo
+    locale: ja-JP
+
+  au:
+    timezone: Australia/Sydney
+    locale: en-AU
+
+  ca:
+    timezone: America/Toronto
+    locale: en-CA
+
+  br:
+    timezone: America/Sao_Paulo
+    locale: pt-BR
+
+  in:
+    timezone: Asia/Kolkata
+    locale: en-IN
+
+  cn:
+    timezone: Asia/Shanghai
+    locale: zh-CN
