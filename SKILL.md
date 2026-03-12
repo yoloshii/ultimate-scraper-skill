@@ -3,6 +3,7 @@ name: ultimate-scraper
 description: Scrapes web pages with intelligent tier escalation and AI extraction. Use when user provides a URL and needs to extract content, bypass anti-bot protection, or parse protected pages. Handles static data extraction (__NEXT_DATA__, JSON-LD), TLS fingerprint spoofing, stealth browsers (CloakBrowser + Patchright), Cloudflare bypass, CAPTCHA solving, proxy rotation, rate limiting, session persistence, fingerprint persistence, visual extraction, behavioral simulation, tracker blocking, shadow DOM piercing, WebMCP extraction, and LLM-powered data extraction.
 allowed-tools: Bash(python*)
 version: 2.0.0
+compatibility: python>=3.8
 triggers:
   - scrape
   - extract
@@ -385,12 +386,66 @@ python scripts/scrape.py \
 
 ## Dependencies
 
+**Core (all tiers):**
+- Python 3.8+
+- httpx (`pip install httpx`) — async HTTP client
+- beautifulsoup4 (`pip install beautifulsoup4`) — HTML parsing
+- lxml (`pip install lxml`) — fast XML/HTML parser
+- html2text (`pip install html2text`) — HTML→Markdown conversion
+- pyyaml (`pip install pyyaml`) — YAML config loading
+- python-dotenv (`pip install python-dotenv`) — .env file loading
+
+**Tier 0 — Static extraction:**
+- chompjs (`pip install chompjs`) — JavaScript object→Python dict parsing
+- extruct (`pip install extruct`) — JSON-LD, Microdata, OpenGraph extraction
+
+**Tier 1 — HTTP with TLS spoofing:**
+- curl_cffi (`pip install curl_cffi`) — HTTP client with browser TLS fingerprint impersonation
+
+**Tier 2 — Stealth browser:**
+- scrapling (`pip install scrapling`) — Patchright-based stealth browser automation
+- cloakbrowser (`pip install cloakbrowser`) — 26 C++ source-level Chromium patches (preferred over Patchright). Binary auto-downloads ~200MB on first use. Set `CLOAKBROWSER_ENABLED=0` to force Patchright fallback.
+
+**Tier 3 — Anti-detect browser:**
+- camoufox (`pip install camoufox[geoip] && python -m camoufox fetch`) — C++ anti-detect Firefox with hardware-backed fingerprinting. First run downloads ~780MB browser package.
+
+**Tier 4 — AI extraction:**
+- crawl4ai (`pip install crawl4ai`) — AI-powered web crawling with LLM integration
+
+**Test dependencies:**
+- pytest, pytest-asyncio, pytest-cov, scipy, httpx
+
+**Install order:**
 ```bash
-pip install scrapling camoufox crawl4ai curl_cffi chompjs extruct \
-  html2text beautifulsoup4 lxml httpx pyyaml python-dotenv
+# 1. Core
+pip install httpx beautifulsoup4 lxml html2text pyyaml python-dotenv
+
+# 2. Static extraction (Tier 0)
+pip install chompjs extruct
+
+# 3. HTTP tier (Tier 1)
+pip install curl_cffi
+
+# 4. Browser tiers (Tier 2-3)
+pip install scrapling cloakbrowser
+pip install 'camoufox[geoip]' && python -m camoufox fetch
+
+# 5. AI tier (Tier 4)
+pip install crawl4ai
+
+# 6. Test dependencies (optional)
+pip install pytest pytest-asyncio pytest-cov scipy
 ```
 
-Note: First Camoufox run downloads ~780MB browser package.
+## WSL2 Known Issues
+
+| Issue | Tier | Symptom | Workaround |
+|-------|------|---------|------------|
+| Camoufox Turnstile failure | 3 | Cloudflare Turnstile never solves (90s poll, zero captures) | Run on native Linux or VM via SSH |
+| Virtual GPU fingerprinting | 3 | WSL2's synthetic GPU produces fingerprints Turnstile detects as non-human | Native Linux VM passes; WSL2 does not |
+| CloakBrowser display | 2 | Headed mode may fail without X server | Install VcXsrv or use headless mode |
+
+Tier 3 on WSL2 is unreliable for Turnstile-protected sites. WSL2's virtual GPU produces inconsistent canvas, WebGL, and audio fingerprints. Tiers 0-2 and 4-5 work normally on WSL2.
 
 ## Environment Variables
 
@@ -445,6 +500,4 @@ python -m pytest tests/ --cov=. --cov-report=html
 
 ### Test Dependencies
 
-```bash
-pip install pytest pytest-asyncio pytest-cov scipy httpx
-```
+See Dependencies section above for install commands.

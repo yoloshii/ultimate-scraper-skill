@@ -20,12 +20,13 @@ Multi-tier web scraper with intelligent tier escalation, anti-bot bypass, CAPTCH
 ## Quick Start
 
 ```bash
-# Install dependencies
-pip install scrapling camoufox crawl4ai curl_cffi chompjs extruct \
-  html2text beautifulsoup4 lxml httpx pyyaml python-dotenv
-
-# Optional: CloakBrowser for enhanced Tier 2 stealth
-pip install cloakbrowser
+# Install core + all tiers
+pip install httpx beautifulsoup4 lxml html2text pyyaml python-dotenv
+pip install chompjs extruct              # Tier 0: static extraction
+pip install curl_cffi                     # Tier 1: TLS spoofing
+pip install scrapling cloakbrowser        # Tier 2: stealth browser
+pip install 'camoufox[geoip]' && python -m camoufox fetch  # Tier 3: anti-detect (~780MB)
+pip install crawl4ai                      # Tier 4: AI extraction
 
 # Basic scrape
 python scripts/scrape.py "https://example.com"
@@ -162,9 +163,21 @@ python scripts/scrape.py \
 
 This project includes `CLAUDE.md` and `AGENTS.md` for agent-first deployment. These files provide structured instructions for AI agents (Claude Code, Cursor, Windsurf, or any agent framework) to use the scraper autonomously.
 
+## WSL2 Known Issues
+
+| Issue | Tier | Workaround |
+|-------|------|------------|
+| Camoufox Turnstile failure | 3 | Run on native Linux or VM via SSH |
+| Virtual GPU fingerprinting | 3 | Native Linux VM passes; WSL2 does not |
+| CloakBrowser headed mode | 2 | Install VcXsrv or use headless mode |
+
+Tier 3 is unreliable on WSL2 for Turnstile-protected sites due to virtual GPU fingerprinting. Tiers 0-2 and 4-5 work normally.
+
 ## Testing
 
 ```bash
+pip install pytest pytest-asyncio pytest-cov scipy  # Test dependencies
+
 cd scripts
 python -m pytest tests/ -v                    # Unit + integration tests
 python -m pytest tests/ -m "" -v              # All tests including E2E

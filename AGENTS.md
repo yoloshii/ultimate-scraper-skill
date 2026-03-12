@@ -162,18 +162,14 @@ python -m pytest tests/ --cov=. --cov-report=html
 
 ## Dependencies
 
-```bash
-pip install scrapling camoufox crawl4ai curl_cffi chompjs extruct \
-  html2text beautifulsoup4 lxml httpx pyyaml python-dotenv
+Core: `httpx`, `beautifulsoup4`, `lxml`, `html2text`, `pyyaml`, `python-dotenv`
+Tier 0: `chompjs`, `extruct` — static data extraction
+Tier 1: `curl_cffi` — TLS fingerprint spoofing
+Tier 2: `scrapling` + `cloakbrowser` (C++ patched Chromium, auto-downloaded) / Patchright fallback (`CLOAKBROWSER_ENABLED=0`)
+Tier 3: `camoufox[geoip]` + `python -m camoufox fetch` (~780MB browser download)
+Tier 4: `crawl4ai` — AI-powered extraction
+Tests: `pytest`, `pytest-asyncio`, `pytest-cov`, `scipy`
 
-# Optional: CloakBrowser (C++ patched Chromium for enhanced stealth)
-pip install cloakbrowser
+Install order: core → chompjs/extruct → curl_cffi → scrapling/cloakbrowser → camoufox → crawl4ai
 
-# Optional: CAPTCHA solving
-# Configure via CAPSOLVER_API_KEY or TWOCAPTCHA_API_KEY env vars
-
-# Test dependencies
-pip install pytest pytest-asyncio pytest-cov
-```
-
-Note: First Camoufox run downloads ~780MB browser package.
+WSL2: Tier 3 unreliable for Turnstile-protected sites (virtual GPU fingerprinting). Tiers 0-2, 4-5 work normally.
