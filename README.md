@@ -75,17 +75,19 @@ Residential proxies recommended for anti-bot sites. Geo-targeting via `-g us`, `
 
 ### AI Extraction
 
-3-tier LLM routing for `--extract` mode:
+3-tier LLM routing for `--extract` mode. The default chain reflects the developer's setup — **swap in whichever models and providers you prefer.** Any OpenAI-compatible API works for Tier 1, and the fallback tiers are simple to rewire in `scripts/extraction/ai_router.py`.
+
+The dev's local model is [GLM-4.7-Flash-UD Q4](https://huggingface.co/THUDM/glm-4-9b-hf) served via vLLM/llama.cpp, but any instruction-following model with JSON output works (Qwen 2.5, Llama 3.1, Mistral, etc.).
 
 ```bash
 # Tier 1: Any OpenAI-compatible local LLM
 LOCAL_LLM_URL=http://localhost:8080/v1/chat/completions
 LOCAL_LLM_ENABLED=true
 
-# Tier 2: z.ai GLM-4.5-Air
+# Tier 2: z.ai GLM-4.5-Air (or any cloud LLM — modify ai_router.py)
 ZAI_API_KEY=your_key
 
-# Tier 3: Anthropic Claude Haiku
+# Tier 3: Anthropic Claude Haiku (or any fallback — modify ai_router.py)
 ANTHROPIC_API_KEY=your_key
 ```
 

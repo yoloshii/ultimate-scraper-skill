@@ -98,17 +98,19 @@ PROXY_PASSWORD=your_password      # Auth password
 
 ### AI Extraction
 
-3-tier LLM routing for `--extract` mode:
+3-tier LLM routing for `--extract` mode. The default chain (local → z.ai → Haiku) reflects the developer's setup. **Models and providers are user preference** — modify `scripts/extraction/ai_router.py` to wire in your own. Any OpenAI-compatible API works for Tier 1.
+
+Recommended local model: [GLM-4.7-Flash-UD Q4](https://huggingface.co/THUDM/glm-4-9b-hf) via vLLM/llama.cpp, or any instruction-following model with JSON output (Qwen 2.5, Llama 3.1, Mistral, etc.).
 
 ```bash
 # Tier 1: Any OpenAI-compatible local LLM (free)
 LOCAL_LLM_URL=http://localhost:8080/v1/chat/completions
 LOCAL_LLM_ENABLED=true
 
-# Tier 2: z.ai GLM-4.5-Air (rate-limited)
+# Tier 2: z.ai GLM-4.5-Air (rate-limited — or swap for your preferred cloud LLM)
 ZAI_API_KEY=your_key
 
-# Tier 3: Anthropic Claude Haiku (paid fallback)
+# Tier 3: Anthropic Claude Haiku (paid fallback — or swap for any provider)
 ANTHROPIC_API_KEY=your_key
 ```
 

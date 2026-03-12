@@ -196,6 +196,10 @@ Consistent browser fingerprints per domain:
 
 ### LLM Routing (--extract)
 
+The default fallback chain reflects the developer's setup. **Models and providers are user preference** — modify `scripts/extraction/ai_router.py` to wire in your own. Any OpenAI-compatible API works for Tier 1.
+
+Recommended local model: [GLM-4.7-Flash-UD Q4](https://huggingface.co/THUDM/glm-4-9b-hf) via vLLM/llama.cpp, or any instruction-following model with JSON output (Qwen 2.5, Llama 3.1, Mistral, etc.).
+
 ```
 1. Local LLM (any OpenAI-compatible API) → configure via LOCAL_LLM_URL
    ↓ unavailable
