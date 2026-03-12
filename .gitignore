@@ -19,6 +19,9 @@ sessions/
 # Code review artifacts (contain local paths)
 .ralph/
 
+# Skill runtime issue tracking (local only)
+ISSUES.md
+
 # IDE
 .idea/
 .vscode/
