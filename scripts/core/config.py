@@ -77,7 +77,7 @@ class ScraperConfig:
     # Tracker blocking (E8)
     block_trackers: bool = True
 
-    # WebMCP (E5) — "auto" detects Chrome 146+, "1" forces, "0" disables
+    # WebMCP (E5) — "auto" detects Chrome 147+, "1" forces, "0" disables
     webmcp_enabled: str = "auto"
     chrome_channel: str = ""  # chrome-dev, chrome-beta, chrome-canary, or empty
 

@@ -13,7 +13,7 @@ Multi-tier web scraper with intelligent tier escalation, anti-bot bypass, CAPTCH
 - **Proxy support** with geo-targeting and timezone/locale correlation
 - **Tracker blocking** via CDP network interception
 - **Shadow DOM piercing** for web components
-- **WebMCP extraction** for Chrome 146+ structured tool discovery
+- **WebMCP extraction** for Chrome 147+ structured tool discovery
 - **Batch processing** with checkpointing and streaming output
 - **Session persistence** with cookie/state management
 

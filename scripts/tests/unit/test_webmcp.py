@@ -26,9 +26,25 @@ class TestWebMCPInitScript:
         """Script intercepts navigator.modelContext.registerTool."""
         assert "registerTool" in WEBMCP_INIT_SCRIPT
 
-    def test_intercepts_provide_context(self):
-        """Script intercepts navigator.modelContext.provideContext."""
-        assert "provideContext" in WEBMCP_INIT_SCRIPT
+    def test_no_provide_context(self):
+        """Script does NOT reference provideContext (removed in Chrome 147, spec PR #132)."""
+        # provideContext/clearContext were removed from the spec
+        # Our init script must not call .bind() on non-existent methods
+        assert ".provideContext" not in WEBMCP_INIT_SCRIPT
+        assert ".clearContext" not in WEBMCP_INIT_SCRIPT
+
+    def test_captures_read_only_hint(self):
+        """Script captures readOnlyHint from ToolAnnotations."""
+        assert "readOnlyHint" in WEBMCP_INIT_SCRIPT
+
+    def test_provides_mock_client(self):
+        """Script provides mockClient with requestUserInteraction for execute callback."""
+        assert "requestUserInteraction" in WEBMCP_INIT_SCRIPT
+        assert "mockClient" in WEBMCP_INIT_SCRIPT
+
+    def test_checks_register_tool_existence(self):
+        """Script checks registerTool exists before binding."""
+        assert "typeof navigator.modelContext.registerTool" in WEBMCP_INIT_SCRIPT
 
     def test_scans_declarative_forms(self):
         """Script scans declarative <form toolname> elements."""

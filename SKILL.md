@@ -123,7 +123,7 @@ User wants to scrape?
 | CAPTCHA solving | CapSolver (AI) + 2Captcha (human) with auto-detection |
 | Visual extraction | Screenshot + Vision LLM |
 | AI extraction | Crawl4AI + 3-tier LLM routing |
-| WebMCP extraction | Chrome 146+ navigator.modelContext tool discovery |
+| WebMCP extraction | Chrome 147+ navigator.modelContext tool discovery |
 | Proxy | Bring-your-own residential/mobile proxy |
 | Cache | SQLite, 24h TTL |
 | Sessions | SQLite-backed, auto-persist on anti-bot |
