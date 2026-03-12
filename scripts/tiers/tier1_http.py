@@ -7,6 +7,7 @@ from core.result import ScrapeResult, Blocked, RateLimited, ProxyError
 from extraction.static import StaticExtractor
 from output.formatter import OutputFormatter
 from proxy.manager import ProxyConfig, ProxyEmpireManager
+from detection.cloudflare import extract_cf_headers, parse_rfc9457_error
 
 if TYPE_CHECKING:
     from fingerprint.manager import FingerprintProfile
@@ -161,14 +162,53 @@ class Tier1HTTP(BaseTier):
                 # Has content - return as success with 403 status
             if response.status == 429:
                 return self._create_rate_limited_result(url, response.status)
+            if response.status == 402:
+                resp_headers = dict(response.headers) if hasattr(response, 'headers') else {}
+                problem = parse_rfc9457_error(html, resp_headers.get("content-type", ""), 402)
+                return ScrapeResult(
+                    success=False,
+                    tier_used=self.TIER_NUMBER,
+                    status_code=402,
+                    url=url,
+                    error="Payment Required (HTTP 402)",
+                    error_type="PaywallDetected",
+                    cf_metadata={"rfc9457": problem} if problem else None,
+                )
+
+            # Extract Cloudflare headers (Content-Signal, x-markdown-tokens)
+            resp_headers = dict(response.headers) if hasattr(response, 'headers') else {}
+            cf_meta = extract_cf_headers(resp_headers)
+
+            # Check for RFC 9457 structured error in Cloudflare error pages
+            if response.status >= 400:
+                problem = parse_rfc9457_error(html, resp_headers.get("content-type", ""), response.status)
+                if problem:
+                    if cf_meta:
+                        cf_meta["rfc9457"] = problem
+                    else:
+                        cf_meta = {"rfc9457": problem}
+                    if problem.get("retryable") and problem.get("retry_after"):
+                        return ScrapeResult(
+                            success=False,
+                            tier_used=self.TIER_NUMBER,
+                            status_code=response.status,
+                            url=url,
+                            error=problem.get("title") or f"Cloudflare error {response.status}",
+                            error_type="Blocked",
+                            cf_metadata=cf_meta,
+                            metadata={"retry_after": problem["retry_after"]},
+                        )
 
             # Extract static data if available
             static_data = None
             if StaticExtractor.has_static_data(html):
                 static_data = StaticExtractor.extract_all(html)
 
-            # Convert to markdown
-            markdown = OutputFormatter.html_to_markdown(html)
+            # If Cloudflare returned markdown directly, use it; otherwise convert
+            if cf_meta.get("is_cf_markdown"):
+                markdown = html
+            else:
+                markdown = OutputFormatter.html_to_markdown(html)
 
             return ScrapeResult(
                 success=True,
@@ -176,10 +216,11 @@ class Tier1HTTP(BaseTier):
                 status_code=response.status,
                 url=url,
                 final_url=str(response.url) if hasattr(response, 'url') else url,
-                html=html,
+                html=html if not cf_meta.get("is_cf_markdown") else "",
                 markdown=markdown,
                 static_data=static_data,
                 cookies=dict(response.cookies) if hasattr(response, 'cookies') else {},
+                cf_metadata=cf_meta or None,
                 metadata={
                     "impersonate": impersonate,
                     "proxy_geo": proxy.geo if proxy else None,
@@ -273,14 +314,53 @@ class Tier1HTTP(BaseTier):
                     return self._create_blocked_result(url, response.status_code, "403 Forbidden")
             if response.status_code == 429:
                 return self._create_rate_limited_result(url, response.status_code)
+            if response.status_code == 402:
+                resp_headers = dict(response.headers) if hasattr(response, 'headers') else {}
+                problem = parse_rfc9457_error(html, resp_headers.get("content-type", ""), 402)
+                return ScrapeResult(
+                    success=False,
+                    tier_used=self.TIER_NUMBER,
+                    status_code=402,
+                    url=url,
+                    error="Payment Required (HTTP 402)",
+                    error_type="PaywallDetected",
+                    cf_metadata={"rfc9457": problem} if problem else None,
+                )
+
+            # Extract Cloudflare headers
+            resp_headers = dict(response.headers) if hasattr(response, 'headers') else {}
+            cf_meta = extract_cf_headers(resp_headers)
+
+            # Check for RFC 9457 structured error
+            if response.status_code >= 400:
+                problem = parse_rfc9457_error(html, resp_headers.get("content-type", ""), response.status_code)
+                if problem:
+                    if cf_meta:
+                        cf_meta["rfc9457"] = problem
+                    else:
+                        cf_meta = {"rfc9457": problem}
+                    if problem.get("retryable") and problem.get("retry_after"):
+                        return ScrapeResult(
+                            success=False,
+                            tier_used=self.TIER_NUMBER,
+                            status_code=response.status_code,
+                            url=url,
+                            error=problem.get("title") or f"Cloudflare error {response.status_code}",
+                            error_type="Blocked",
+                            cf_metadata=cf_meta,
+                            metadata={"retry_after": problem["retry_after"]},
+                        )
 
             # Extract static data
             static_data = None
             if StaticExtractor.has_static_data(html):
                 static_data = StaticExtractor.extract_all(html)
 
-            # Convert to markdown
-            markdown = OutputFormatter.html_to_markdown(html)
+            # If Cloudflare returned markdown directly, use it; otherwise convert
+            if cf_meta.get("is_cf_markdown"):
+                markdown = html
+            else:
+                markdown = OutputFormatter.html_to_markdown(html)
 
             return ScrapeResult(
                 success=True,
@@ -288,10 +368,11 @@ class Tier1HTTP(BaseTier):
                 status_code=response.status_code,
                 url=url,
                 final_url=str(response.url),
-                html=html,
+                html=html if not cf_meta.get("is_cf_markdown") else "",
                 markdown=markdown,
                 static_data=static_data,
                 cookies=dict(response.cookies),
+                cf_metadata=cf_meta or None,
                 metadata={
                     "impersonate": impersonate,
                     "proxy_geo": proxy.geo if proxy else None,

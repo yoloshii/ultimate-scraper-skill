@@ -25,6 +25,7 @@ from output.formatter import OutputFormatter
 from cache.manager import CacheManager
 from rate_limiting.limiter import RateLimiter
 from captcha.solver import CaptchaSolver
+from detection.cloudflare import extract_cf_headers, parse_rfc9457_error, is_cf_markdown_response
 
 
 class UltimateScraper:
@@ -137,6 +138,54 @@ class UltimateScraper:
             except Exception:
                 return None
 
+    async def _try_cf_markdown(self, url: str, timeout: int = 15) -> Optional[ScrapeResult]:
+        """
+        Fast-path: Try Cloudflare Markdown for Agents.
+
+        Sends Accept: text/markdown header. If the site is Cloudflare-proxied
+        with Markdown for Agents enabled, returns pre-converted markdown directly
+        (skipping html2text conversion). Returns None if not supported.
+        """
+        try:
+            from curl_cffi.requests import AsyncSession
+
+            async with AsyncSession() as session:
+                response = await session.get(
+                    url,
+                    headers={"Accept": "text/markdown"},
+                    timeout=timeout,
+                    allow_redirects=True,
+                    impersonate="chrome",
+                )
+
+                content_type = response.headers.get("content-type", "")
+                if not is_cf_markdown_response(content_type):
+                    return None  # Site doesn't support CF markdown
+
+                markdown = response.text
+                if not markdown or len(markdown.strip()) < 50:
+                    return None
+
+                # Extract CF-specific headers
+                cf_meta = extract_cf_headers(dict(response.headers))
+                cf_meta["is_cf_markdown"] = True
+
+                return ScrapeResult(
+                    success=True,
+                    tier_used=1,  # Classify as Tier 1 (HTTP-level fetch)
+                    status_code=response.status_code,
+                    url=url,
+                    final_url=str(response.url),
+                    markdown=markdown,
+                    cf_metadata=cf_meta,
+                    metadata={
+                        "source": "cloudflare_markdown",
+                        "content_length": len(markdown),
+                    },
+                )
+        except Exception:
+            return None
+
     async def scrape(
         self,
         url: str,
@@ -227,6 +276,21 @@ class UltimateScraper:
         if profile.is_sensitive:
             if verbose:
                 print(f"[Sensitive] {profile.domain} - enforcing sensitive mode")
+
+        # Step 2.7: Cloudflare Markdown fast-path
+        # Try Accept: text/markdown for non-sensitive auto/http mode (identifies as agent)
+        if mode in ("auto", "http") and not profile.is_sensitive and not extract_prompt:
+            if verbose:
+                print(f"[CF Markdown] Probing for Cloudflare Markdown for Agents...")
+            cf_result = await self._try_cf_markdown(url, timeout=timeout)
+            if cf_result and cf_result.success:
+                if verbose:
+                    tokens = (cf_result.cf_metadata or {}).get("markdown_tokens", "?")
+                    print(f"[CF Markdown] Success! ({tokens} tokens)")
+                # Cache the result
+                if use_cache:
+                    self.cache_manager.put(url, mode, extract_prompt, cf_result.to_dict())
+                return cf_result
 
         # Step 3: Determine tier strategy
         if force_tier is not None:
@@ -443,8 +507,23 @@ class UltimateScraper:
                         self.rate_limiter.record(urlparse(url).netloc)
                     break
 
-                # If not successful, record error and continue
+                # If not successful, check for special cases before escalating
                 last_error = result.error
+
+                # HTTP 402 — payment required, don't escalate (no tier will fix this)
+                if result.error_type == "PaywallDetected" and result.status_code == 402:
+                    if verbose:
+                        print(f"[Tier {tier}] HTTP 402 Payment Required — stopping escalation")
+                    break
+
+                # RFC 9457 retry guidance — wait and retry same tier instead of escalating
+                retry_after = (result.metadata or {}).get("retry_after", 0)
+                if retry_after and result.cf_metadata and result.cf_metadata.get("rfc9457", {}).get("retryable"):
+                    if verbose:
+                        print(f"[RFC 9457] Retryable error, waiting {retry_after}s before retry...")
+                    await asyncio.sleep(min(retry_after, 30))  # Cap at 30s
+                    # Don't record as tier failure — it's a transient CF error
+                    continue
 
                 # Record tier failure for domain (E7)
                 self.fingerprint_manager.record_tier_attempt(

@@ -47,6 +47,9 @@ class ScrapeResult:
     from_cache: bool = False
     metadata: dict = field(default_factory=dict)
 
+    # Cloudflare metadata (Content-Signal, token count, RFC 9457 details)
+    cf_metadata: Optional[dict] = None
+
     @property
     def content(self) -> str:
         """Return best available content."""
@@ -82,6 +85,7 @@ class ScrapeResult:
             "session_id": self.session_id,
             "fingerprint_id": self.fingerprint_id,
             "metadata": self.metadata,
+            "cf_metadata": self.cf_metadata,
         }
 
     def __str__(self) -> str:
